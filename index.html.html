@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Triagem e Encaminhamento</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2b5c8f; --primary-light: #427eb5; --secondary: #e6f0fa;
+            --bg-color: #f3f4f6; --card-bg: #ffffff; --text-main: #1f2937; --text-muted: #6b7280;
+            --risk-red: #ff0000; --risk-orange: #ff9900; --risk-yellow: #ffff00;
+            --risk-green: #00ff00; --risk-blue: #00ffff;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body { background-color: var(--bg-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; color: var(--text-main); }
+        .screen-bg { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-image: radial-gradient(var(--secondary) 1px, transparent 1px); background-size: 20px 20px; z-index: -1; }
+        .app-wrapper { width: 100%; max-width: 800px; padding: 20px; margin: 20px 0; }
+        .card { background: var(--card-bg); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; }
+        .card-header { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; padding: 25px 30px; text-align: center; }
+        .app-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 5px; }
+        .card-body { padding: 40px 30px; }
+        
+        .fade-in { animation: fadeIn 0.4s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .hidden { display: none !important; }
+
+        .form-title { color: var(--primary); margin-bottom: 10px; text-align: center; font-size: 1.5rem; }
+        .form-desc { color: var(--text-muted); margin-bottom: 25px; text-align: center; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9rem; color: var(--text-main); }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 12px 15px; font-size: 1rem; border: 2px solid #e5e7eb; border-radius: 10px; outline: none; transition: 0.3s; font-family: 'Poppins', sans-serif;}
+        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        .btn-main { background-color: var(--primary); color: white; padding: 15px 40px; font-size: 1.1rem; font-weight: 600; border: none; border-radius: 10px; cursor: pointer; transition: 0.2s; width: 100%; margin-top: 10px; }
+        .btn-main:hover { background-color: var(--primary-light); }
+        .btn-main:disabled { background-color: #9ca3af; cursor: not-allowed; }
+        .btn-outline { background-color: transparent; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-outline:hover { background-color: var(--secondary); }
+
+        .progress-bar-container { width: 100%; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; margin-top: 15px; }
+        .progress-bar { height: 100%; background: white; border-radius: 3px; transition: width 0.4s ease; }
+        .progress-text { font-size: 0.85rem; margin-top: 8px; opacity: 0.9; }
+
+        #quiz-screen { text-align: center; }
+        .block-badge { display: inline-block; background: var(--secondary); color: var(--primary); padding: 6px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-bottom: 25px; text-transform: uppercase; }
+        .question { font-size: 1.4rem; font-weight: 500; line-height: 1.4; margin-bottom: 40px; min-height: 90px; display: flex; align-items: center; justify-content: center; }
+        .actions { display: flex; gap: 20px; justify-content: center; }
+        .btn-yes, .btn-no { flex: 1; padding: 16px 24px; font-size: 1.1rem; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; }
+        .btn-yes { background-color: #10b981; } .btn-no { background-color: #ef4444; }
+
+        .result-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #f3f4f6; padding-bottom: 20px; }
+        .protocol-id { font-family: monospace; font-size: 1.1rem; background: #e5e7eb; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
+        .score-row { display: flex; gap: 20px; margin-bottom: 30px; }
+        .score-box { flex: 1; background: var(--secondary); border-radius: 15px; padding: 20px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+        .score-box .value { font-size: 3.5rem; font-weight: 700; color: var(--primary); line-height: 1.1; }
+        .risk-box { flex: 2; border-radius: 15px; padding: 20px; color: #1f2937; display: flex; flex-direction: column; justify-content: center; text-align: center; border: 2px solid transparent;}
+        .risk-box .value { font-size: 1.8rem; font-weight: 700; line-height: 1.2; margin-bottom: 10px; }
+        .risk-details { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; font-size: 0.95rem; font-weight: 500; }
+        .risk-details span { background: rgba(255,255,255,0.4); padding: 4px 10px; border-radius: 8px; }
+        
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; text-align: left; background: #f9fafb; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; }
+        .info-col h4 { color: var(--primary); margin-bottom: 10px; font-size: 1rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px;}
+        .info-col p { font-size: 0.9rem; margin-bottom: 5px; }
+
+        .motivo-box { text-align: left; background: #f9fafb; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 20px; }
+        .motivo-box h4 { color: var(--primary); margin-bottom: 5px; font-size: 1rem; }
+        .motivo-box p { font-size: 0.9rem; white-space: pre-wrap; }
+
+        .summary-list { list-style: none; background: #f9fafb; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; max-height: 200px; overflow-y: auto; text-align: left;}
+        .summary-list li { padding: 8px 0; border-bottom: 1px dashed #d1d5db; font-size: 0.9rem; display: flex; gap: 10px; }
+        .summary-list li::before { content: '⚠️'; font-size: 1rem; }
+        .final-actions { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 30px; }
+        .btn-save { background-color: #2563eb; color: white; flex: 1; }
+        .btn-print { background-color: #4b5563; color: white; flex: 1; }
+
+        /* Lista de Buscas */
+        .search-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 15px; text-align: left; margin-bottom: 15px; }
+        .search-card p { margin-bottom: 5px; font-size: 0.95rem; }
+
+        @media (max-width: 600px) { .form-grid, .info-grid, .score-row { grid-template-columns: 1fr; flex-direction: column; } }
+        
+        /* IMPRESSÃO A4 */
+        @media print {
+            @page { size: A4; margin: 15mm; }
+            body, html { display: block !important; height: auto !important; background: white !important; padding: 0 !important; margin: 0 !important; }
+            .screen-bg { display: none !important; }
+            .app-wrapper { max-width: 100% !important; padding: 0 !important; display: block !important; margin: 0 !important; }
+            .card { box-shadow: none !important; border-radius: 0 !important; border: none !important; }
+            .card-header, .card-body { padding: 10px !important; }
+            .final-actions { display: none !important; }
+            .summary-list { max-height: none !important; overflow: visible !important; border: none !important; padding: 0 !important; background: transparent !important; }
+            .summary-list li { border-bottom: 1px solid #e5e7eb !important; page-break-inside: avoid !important; }
+            .score-box, .risk-box, .risk-details span { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .score-row, .info-grid, .motivo-box { page-break-inside: avoid !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="screen-bg"></div>
+    <div class="app-wrapper">
+        <div class="card" id="app-card">
+            <div class="card-header" id="header-main">
+                <div class="app-title" id="header-title">Sistema de Triagem</div>
+                <div id="quiz-progress-container" class="hidden">
+                    <div class="progress-bar-container"><div class="progress-bar" id="progress-bar" style="width: 0%;"></div></div>
+                    <div class="progress-text" id="progress-text">Pergunta 1 de 20</div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                
+                <!-- LOGIN -->
+                <div id="screen-login" class="fade-in">
+                    <h2 class="form-title">Acesso Profissional</h2>
+                    <p class="form-desc">Digite o seu número de CRO para iniciar a sessão.</p>
+                    <div class="input-group" style="text-align: center;">
+                        <input type="text" id="prof-cro" class="form-input" placeholder="Ex: 12345" autocomplete="off" style="max-width: 300px; text-align: center; font-size: 1.2rem; letter-spacing: 2px;">
+                    </div>
+                    <button class="btn-main" id="btn-login" onclick="authenticateCRO()" style="max-width: 300px; margin: 0 auto; display: block;">Nova Triagem</button>
+                    <br>
+                    <a href="#" onclick="openSearchScreen()" style="color: var(--primary); text-decoration: underline; font-size: 0.95rem;">Consultar Encaminhamentos</a>
+                    <p id="login-error" style="color: red; text-align: center; margin-top: 15px; font-size: 0.9rem;" class="hidden"></p>
+                </div>
+
+                <!-- BUSCA (CONSULTA) -->
+                <div id="screen-search" class="hidden fade-in">
+                    <h2 class="form-title">Consultar Histórico</h2>
+                    <p class="form-desc">Identifique-se e informe o CPF do paciente.</p>
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label>Seu CRO</label>
+                            <input type="text" id="search-cro" class="form-input">
+                        </div>
+                        <div class="input-group">
+                            <label>CPF do Paciente</label>
+                            <input type="text" id="search-cpf" class="form-input" placeholder="000.000.000-00">
+                        </div>
+                    </div>
+                    <button class="btn-main" id="btn-search" onclick="performSearch()">Buscar Paciente</button>
+                    <button class="btn-main btn-outline" onclick="backToLogin()">Voltar ao Início</button>
+                    <p id="search-error" style="color: red; text-align: center; margin-top: 15px; font-size: 0.9rem;" class="hidden"></p>
+                </div>
+
+                <!-- LISTA DE RESULTADOS DA BUSCA -->
+                <div id="screen-search-results" class="hidden fade-in">
+                    <h2 class="form-title">Encaminhamentos Encontrados</h2>
+                    <p id="search-summary" style="text-align: center; margin-bottom: 20px; font-weight: 500;"></p>
+                    <div id="search-list" style="display: flex; flex-direction: column; max-height: 400px; overflow-y: auto;"></div>
+                    <button class="btn-main btn-outline" onclick="openSearchScreen()">Fazer Nova Busca</button>
+                </div>
+
+                <!-- ESPECIALIDADE -->
+                <div id="screen-specialty" class="hidden fade-in">
+                    <h2 class="form-title">Especialidade</h2>
+                    <p class="form-desc">Profissional: <strong id="lbl-prof-name"></strong><br>Selecione a especialidade do encaminhamento.</p>
+                    <div class="input-group">
+                        <select id="spec-select" class="form-select">
+                            <option value="">-- Selecione uma opção --</option>
+                            <option value="Endodontia">Endodontia</option>
+                            <option value="Cirurgia">Cirurgia Bucomaxilofacial</option>
+                            <option value="Periodontia">Periodontia</option>
+                            <option value="Odontopediatria">Odontopediatria</option>
+                            <option value="Pacientes Especiais">Pacientes Especiais</option>
+                            <option value="Protese">Prótese / Dentística</option>
+                            <option value="Estomatologia">Estomatologia (Lesões)</option>
+                            <option value="Ortodontia">Ortodontia</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                    <button class="btn-main" onclick="goToPatientScreen()">Avançar</button>
+                </div>
+
+                <!-- PACIENTE -->
+                <div id="screen-patient" class="hidden fade-in">
+                    <h2 class="form-title">Dados do Paciente</h2>
+                    <p class="form-desc">Preencha os dados básicos para o prontuário.</p>
+                    
+                    <div class="form-grid">
+                        <div class="input-group"><label>Nome Completo *</label><input type="text" id="pat-nome" class="form-input" placeholder="Nome"></div>
+                        <div class="input-group"><label>CPF *</label><input type="text" id="pat-cpf" class="form-input" placeholder="000.000.000-00"></div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="input-group"><label>Data de Nascimento</label><input type="date" id="pat-nasc" class="form-input"></div>
+                        <div class="input-group"><label>Agente Comunitário (ACS)</label><input type="text" id="pat-acs" class="form-input" placeholder="Nome do ACS"></div>
+                    </div>
+                    <div class="input-group"><label>Endereço</label><input type="text" id="pat-end" class="form-input" placeholder="Rua, Número, Bairro"></div>
+                    <div class="input-group"><label>Telefone</label><input type="tel" id="pat-tel" class="form-input" placeholder="(00) 00000-0000"></div>
+                    
+                    <div class="input-group">
+                        <label>Motivo da Consulta / Queixa Principal</label>
+                        <textarea id="pat-motivo" class="form-textarea" placeholder="Descreva o motivo do encaminhamento à atenção especializada..." style="min-height: 100px; resize: vertical;"></textarea>
+                    </div>
+                    <button class="btn-main" onclick="startQuiz()">Iniciar Triagem de Risco</button>
+                </div>
+
+                <!-- QUIZ -->
+                <div id="screen-quiz" class="hidden fade-in">
+                    <div class="block-badge" id="block-badge">Bloco 1</div>
+                    <div class="question" id="question-text">Carregando...</div>
+                    <div class="actions">
+                        <button class="btn-yes" onclick="handleAnswer(true)">SIM</button>
+                        <button class="btn-no" onclick="handleAnswer(false)">NÃO</button>
+                    </div>
+                </div>
+
+                <!-- RESULTADO -->
+                <div id="screen-result" class="hidden fade-in">
+                    <div class="result-header">
+                        <h2 id="final-page-title">Relatório de Triagem</h2>
+                        <span class="protocol-id" id="lbl-id"></span>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 10px;" id="data-hora"></p>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-col">
+                            <h4>Dados do Profissional</h4>
+                            <p><strong>Nome:</strong> <span id="res-prof-nome"></span></p>
+                            <p><strong>CRO:</strong> <span id="res-prof-cro"></span></p>
+                            <p><strong>UBS:</strong> <span id="res-prof-ubs"></span></p>
+                            <p><strong>Especialidade:</strong> <span id="res-spec"></span></p>
+                        </div>
+                        <div class="info-col">
+                            <h4>Dados do Paciente</h4>
+                            <p><strong>Nome:</strong> <span id="res-pat-nome"></span></p>
+                            <p><strong>Nascimento:</strong> <span id="res-pat-nasc"></span> | <strong>CPF:</strong> <span id="res-pat-cpf"></span></p>
+                            <p><strong>Telefone:</strong> <span id="res-pat-tel"></span></p>
+                            <p><strong>Endereço:</strong> <span id="res-pat-end"></span></p>
+                            <p><strong>ACS:</strong> <span id="res-pat-acs"></span></p>
+                        </div>
+                    </div>
+                    <div class="motivo-box">
+                        <h4>Motivo da Consulta</h4>
+                        <p id="res-pat-motivo"></p>
+                    </div>
+                    <div class="score-row">
+                        <div class="score-box"><span style="font-weight: 600; color: var(--primary-light); text-transform: uppercase; font-size: 0.9rem;">Escore Total</span><span class="value" id="final-score">0</span></div>
+                        <div class="risk-box" id="risk-box">
+                            <span style="font-weight: 600; text-transform: uppercase; opacity: 0.8; font-size: 0.9rem;" id="risk-label-title">Classificação</span>
+                            <span class="value" id="risk-title">...</span>
+                            <div class="risk-details">
+                                <span id="risk-level"></span><span id="risk-time"></span><span id="risk-queue"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-section">
+                        <h3 style="font-size: 1rem; margin-bottom: 10px;">Fatores de Risco (Sim):</h3>
+                        <ul class="summary-list" id="summary-list"></ul>
+                    </div>
+                    <div class="final-actions">
+                        <button class="btn-main btn-save" id="btn-save" onclick="saveToDatabase()" style="margin-top: 0;">Salvar no Banco</button>
+                        <button class="btn-main btn-print" onclick="window.print()" style="margin-top: 0;">Imprimir A4</button>
+                        <button class="btn-main btn-outline" id="btn-back-search" onclick="backToSearchResults()" style="display: none; margin-top: 0;">Voltar à Lista</button>
+                        <button class="btn-main" id="btn-new-patient" onclick="location.reload()" style="background-color: var(--primary); margin-top: 0;">Início</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ======= COLE A URL DO SEU GOOGLE APPS SCRIPT AQUI =======
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzmnnj2fFyEaIXbS6bc7ULcujjvCE5yMuFewq6_EIgUvf1h1c43bGZWDr6R5-rfle007A/exec"; 
+        // =========================================================
+
+        let profData = {}; let selectedSpecialty = {}; let patientData = {};
+        let currentIndex = 0; let totalScore = 0; let positiveAnswers = []; 
+        let currentProtocolID = ""; let finalRiskLevel = ""; let currentTimeString = "";
+        let currentSearchResults = [];
+
+        const questions = [
+            { block: "Bloco 1 - Angina e Sepse", text: "Quadro compatível com Angina de Ludwig?", points: 64 },
+            { block: "Bloco 1 - Angina e Sepse", text: "Risco ou sinais e sintomas de Sepse?", points: 64 },
+            { block: "Bloco 2 - Neoplasias e Infecções", text: "Celulite ou abscessos extraorais com ou sem fístula?", points: 32 },
+            { block: "Bloco 2 - Neoplasias e Infecções", text: "Possui alguma fratura nos ossos da face?", points: 32 },
+            { block: "Bloco 2 - Neoplasias e Infecções", text: "Há suspeita de malignidade?", points: 32 },
+            { block: "Bloco 3 - Riscos sistêmicos", text: "É paciente transplantado? (Coração, fígado, rim, pulmão ou medula)", points: 16 },
+            { block: "Bloco 3 - Riscos sistêmicos", text: "Teve AVC ou infarto nos últimos 6 meses?", points: 16 },
+            { block: "Bloco 3 - Riscos sistêmicos", text: "Tem ou teve câncer nos últimos 5 anos?", points: 16 },
+            { block: "Bloco 3 - Riscos sistêmicos", text: "Faz hemodiálise?", points: 16 },
+            { block: "Bloco 3 - Riscos sistêmicos", text: "É paciente hemofílico ou possui alguma doença autoimune?", points: 16 },
+            { block: "Bloco 4 - Dor percebida", text: "O objetivo do encaminhamento envolve molar inferior?", points: 8 },
+            { block: "Bloco 4 - Dor percebida", text: "Exibe abscesso intraoral com ou sem fístula?", points: 8 },
+            { block: "Bloco 4 - Dor percebida", text: "Sente dor ao beber água, comer ou mastigar?", points: 8 },
+            { block: "Bloco 4 - Dor percebida", text: "Sente dor na articulação têmporo-mandibular?", points: 8 },
+            { block: "Bloco 5 - Limitações", text: "Sente dificuldade de se alimentar, engolir ou beber água?", points: 4 },
+            { block: "Bloco 5 - Limitações", text: "Se sente envergonhado ou evita sorrir?", points: 4 },
+            { block: "Bloco 5 - Limitações", text: "Esta condição dificulta ou atrapalha o seu sono?", points: 4 },
+            { block: "Bloco 6 - Doenças crônicas", text: "É hipertenso ou cardiopata? (Controlado ou não)", points: 2 },
+            { block: "Bloco 6 - Doenças crônicas", text: "É diabético? (Controlado ou não)", points: 2 },
+            { block: "Bloco 6 - Doenças crônicas", text: "Possui algum tipo de deficiência?", points: 2 }
+        ];
+
+        function determineRisk(score) {
+            if (score >= 64) return { bg: "var(--risk-red)", text: "#ffffff", title: "EMERGÊNCIA", level: "Risco Altíssimo", time: "Imediato a 24h", queue: "Fila 1" };
+            if (score >= 32) return { bg: "var(--risk-orange)", text: "#000000", title: "MUITO URGENTE", level: "Risco Alto", time: "Até 7 dias", queue: "Fila 2" };
+            if (score >= 16) return { bg: "var(--risk-yellow)", text: "#000000", title: "URGENTE", level: "Risco Médio", time: "Até 30 dias", queue: "Fila 3" };
+            if (score >= 4) return { bg: "var(--risk-green)", text: "#000000", title: "POUCO URGENTE", level: "Risco Baixo", time: "Até 3 meses", queue: "Fila 4" };
+            return { bg: "var(--risk-blue)", text: "#000000", title: "NÃO URGENTE", level: "Sem risco", time: "Até 6 meses", queue: "Fila 5" };
+        }
+
+        // --- NAVEGAÇÃO DE TELAS ---
+        function hideAll() {
+            ['screen-login', 'screen-search', 'screen-search-results', 'screen-specialty', 'screen-patient', 'screen-quiz', 'screen-result'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+        }
+
+        function openSearchScreen() { hideAll(); document.getElementById('screen-search').classList.remove('hidden'); }
+        function backToLogin() { hideAll(); document.getElementById('screen-login').classList.remove('hidden'); }
+        function backToSearchResults() { hideAll(); document.getElementById('screen-search-results').classList.remove('hidden'); }
+
+        // --- FLUXO DE BUSCA ---
+        function performSearch() {
+            const cro = document.getElementById('search-cro').value.trim();
+            const cpf = document.getElementById('search-cpf').value.trim();
+            const btn = document.getElementById('btn-search');
+            const errorMsg = document.getElementById('search-error');
+
+            if(!cro || !cpf) { errorMsg.innerText = "Preencha o CRO e o CPF."; errorMsg.classList.remove('hidden'); return; }
+            btn.innerText = "Buscando..."; btn.disabled = true; errorMsg.classList.add('hidden');
+
+            fetch(GOOGLE_SCRIPT_URL + "?action=search&cro=" + encodeURIComponent(cro) + "&cpf=" + encodeURIComponent(cpf))
+            .then(res => res.json())
+            .then(data => {
+                if(data.erro) { errorMsg.innerText = data.erro; errorMsg.classList.remove('hidden'); return; }
+                
+                currentSearchResults = data.resultados || [];
+                hideAll();
+                document.getElementById('screen-search-results').classList.remove('hidden');
+                
+                const summary = document.getElementById('search-summary');
+                const list = document.getElementById('search-list');
+                list.innerHTML = "";
+
+                if(currentSearchResults.length === 0) {
+                    summary.innerText = "Nenhum encaminhamento encontrado para este CPF.";
+                } else {
+                    summary.innerText = `O paciente possui ${currentSearchResults.length} encaminhamento(s):`;
+                    currentSearchResults.forEach((res, index) => {
+                        let situacaoColor = res.situacao.includes("Aguardando") ? "#f97316" : "var(--primary)";
+                        list.innerHTML += `
+                        <div class="search-card">
+                            <p><strong>Data:</strong> ${res.dataHora}</p>
+                            <p><strong>Especialidade:</strong> ${res.especialidade}</p>
+                            <p><strong>Situação:</strong> <span style="color: ${situacaoColor}; font-weight: 600;">${res.situacao}</span></p>
+                            <button class="btn-main" onclick="viewPastResult(${index})" style="padding: 10px; font-size: 0.9rem; margin-top: 10px; width: auto;">Visualizar Prontuário</button>
+                        </div>`;
+                    });
+                }
+            })
+            .catch(err => { errorMsg.innerText = "Erro ao buscar histórico."; errorMsg.classList.remove('hidden'); })
+            .finally(() => { btn.innerText = "Buscar Paciente"; btn.disabled = false; });
+        }
+
+        function viewPastResult(index) {
+            const res = currentSearchResults[index];
+            hideAll();
+            document.getElementById('screen-result').classList.remove('hidden');
+            document.getElementById('final-page-title').innerText = "Reimpressão de Relatório";
+            
+            document.getElementById('lbl-id').innerText = `ID: ${res.idProtocolo}`; document.getElementById('data-hora').innerText = `Data: ${res.dataHora}`;
+            document.getElementById('res-prof-nome').innerText = res.profissionalNome; document.getElementById('res-prof-cro').innerText = res.profissionalCRO;
+            document.getElementById('res-prof-ubs').innerText = res.profissionalUBS; document.getElementById('res-spec').innerText = res.especialidade;
+            document.getElementById('res-pat-nome').innerText = res.pacienteNome; document.getElementById('res-pat-nasc').innerText = res.pacienteNasc;
+            document.getElementById('res-pat-cpf').innerText = res.pacienteCPF; document.getElementById('res-pat-tel').innerText = res.pacienteTel;
+            document.getElementById('res-pat-end').innerText = res.pacienteEnd; document.getElementById('res-pat-acs').innerText = res.pacienteACS;
+            document.getElementById('res-pat-motivo').innerText = res.pacienteMotivo;
+            document.getElementById('final-score').innerText = res.escore;
+
+            const risk = determineRisk(res.escore);
+            const rBox = document.getElementById('risk-box');
+            rBox.style.backgroundColor = risk.bg; rBox.style.color = risk.text;
+            document.getElementById('risk-label-title').style.color = risk.text;
+            document.getElementById('risk-title').innerText = risk.title;
+            document.getElementById('risk-level').innerText = risk.level;
+            document.getElementById('risk-time').innerText = "Espera: " + risk.time;
+            document.getElementById('risk-queue').innerText = risk.queue;
+
+            const list = document.getElementById('summary-list');
+            list.innerHTML = '';
+            if (!res.achados || res.achados === "Nenhum") { list.innerHTML = '<li>Nenhum fator sentinela identificado.</li>'; } 
+            else { res.achados.split(" | ").forEach(ans => { const li = document.createElement('li'); li.innerText = ans; list.appendChild(li); }); }
+
+            document.getElementById('btn-save').style.display = 'none';
+            document.getElementById('btn-back-search').style.display = 'inline-block';
+            document.getElementById('btn-new-patient').style.display = 'none';
+        }
+
+        // --- FLUXO DE NOVA TRIAGEM ---
+        function authenticateCRO() {
+            const cro = document.getElementById('prof-cro').value.trim();
+            const btn = document.getElementById('btn-login');
+            const errorMsg = document.getElementById('login-error');
+            
+            if(!cro) { errorMsg.innerText = "Digite o número do CRO."; errorMsg.classList.remove('hidden'); return; }
+            btn.innerText = "Verificando..."; btn.disabled = true; errorMsg.classList.add('hidden');
+
+            fetch(GOOGLE_SCRIPT_URL + "?action=login&cro=" + encodeURIComponent(cro))
+                .then(res => res.json())
+                .then(data => {
+                    if(data.encontrado) {
+                        profData = data; document.getElementById('lbl-prof-name').innerText = data.nome;
+                        hideAll(); document.getElementById('screen-specialty').classList.remove('hidden');
+                    } else { errorMsg.innerText = "CRO não encontrado."; errorMsg.classList.remove('hidden'); }
+                })
+                .catch(err => { errorMsg.innerText = "Erro de conexão."; errorMsg.classList.remove('hidden'); })
+                .finally(() => { btn.innerText = "Nova Triagem"; btn.disabled = false; });
+        }
+
+        function goToPatientScreen() {
+            const spec = document.getElementById('spec-select').value;
+            if(!spec) { alert("Selecione uma especialidade."); return; }
+            selectedSpecialty = spec;
+            hideAll(); document.getElementById('screen-patient').classList.remove('hidden');
+        }
+
+        function startQuiz() {
+            const nome = document.getElementById('pat-nome').value.trim();
+            const cpf = document.getElementById('pat-cpf').value.trim();
+            if(!nome) { alert("O Nome do paciente é obrigatório."); return; }
+            if(!cpf) { alert("O CPF do paciente é obrigatório."); return; }
+            
+            // Tratamento rígido de Data: Converte AAAA-MM-DD para DD/MM/AAAA no aplicativo
+            let rawNasc = document.getElementById('pat-nasc').value;
+            let formattedNasc = "Não informado";
+            if (rawNasc) {
+                let parts = rawNasc.split('-');
+                if(parts.length === 3) { formattedNasc = `${parts[2]}/${parts[1]}/${parts[0]}`; }
+            }
+
+            patientData = {
+                nome: nome, 
+                nasc: formattedNasc,
+                cpf: cpf, 
+                end: document.getElementById('pat-end').value || "Não informado",
+                tel: document.getElementById('pat-tel').value || "Não informado", 
+                acs: document.getElementById('pat-acs').value || "Não informado",
+                motivo: document.getElementById('pat-motivo').value.trim() || "Não informado"
+            };
+
+            hideAll();
+            document.getElementById('header-title').innerText = "Triagem de Risco";
+            document.getElementById('quiz-progress-container').classList.remove('hidden');
+            document.getElementById('screen-quiz').classList.remove('hidden');
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            if (currentIndex >= questions.length) { showResults(); return; }
+            const qNum = currentIndex + 1; const totalQ = questions.length;
+            document.getElementById('progress-text').innerText = `Pergunta ${qNum} de ${totalQ}`;
+            document.getElementById('progress-bar').style.width = `${(qNum / totalQ) * 100}%`;
+            document.getElementById('block-badge').innerText = questions[currentIndex].block;
+            
+            const qText = document.getElementById('question-text');
+            qText.classList.remove('fade-in'); void qText.offsetWidth; qText.classList.add('fade-in'); qText.innerText = questions[currentIndex].text;
+        }
+
+        function handleAnswer(isYes) {
+            if (isYes) { totalScore += questions[currentIndex].points; positiveAnswers.push(questions[currentIndex].text); }
+            currentIndex++; setTimeout(() => renderQuestion(), 150);
+        }
+
+        function showResults() {
+            document.getElementById('header-main').classList.add('hidden'); hideAll(); document.getElementById('screen-result').classList.remove('hidden');
+            document.getElementById('final-page-title').innerText = "Relatório de Triagem";
+            
+            currentProtocolID = "TRG-" + Math.random().toString(36).substring(2, 6).toUpperCase() + "-" + Date.now().toString().slice(-4);
+            
+            // Construtor manual de data para não depender de fuso horário internacional
+            const now = new Date();
+            const dia = String(now.getDate()).padStart(2, '0');
+            const mes = String(now.getMonth() + 1).padStart(2, '0');
+            const ano = now.getFullYear();
+            const hr = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            currentTimeString = `${dia}/${mes}/${ano} às ${hr}:${min}`;
+            
+            document.getElementById('lbl-id').innerText = `ID: ${currentProtocolID}`; document.getElementById('data-hora').innerText = `Data/Hora: ${currentTimeString}`;
+            document.getElementById('res-prof-nome').innerText = profData.nome; document.getElementById('res-prof-cro').innerText = profData.cro;
+            document.getElementById('res-prof-ubs').innerText = profData.ubs; document.getElementById('res-spec').innerText = selectedSpecialty;
+            document.getElementById('res-pat-nome').innerText = patientData.nome; document.getElementById('res-pat-nasc').innerText = patientData.nasc;
+            document.getElementById('res-pat-cpf').innerText = patientData.cpf; document.getElementById('res-pat-tel').innerText = patientData.tel;
+            document.getElementById('res-pat-end').innerText = patientData.end; document.getElementById('res-pat-acs').innerText = patientData.acs;
+            document.getElementById('res-pat-motivo').innerText = patientData.motivo;
+            document.getElementById('final-score').innerText = totalScore;
+
+            const risk = determineRisk(totalScore); finalRiskLevel = risk.title;
+            const rBox = document.getElementById('risk-box'); rBox.style.backgroundColor = risk.bg; rBox.style.color = risk.text;
+            document.getElementById('risk-label-title').style.color = risk.text;
+            
+            document.getElementById('risk-title').innerText = risk.title; document.getElementById('risk-level').innerText = risk.level;
+            document.getElementById('risk-time').innerText = "Espera: " + risk.time; document.getElementById('risk-queue').innerText = risk.queue;
+
+            const list = document.getElementById('summary-list');
+            list.innerHTML = '';
+            if (positiveAnswers.length === 0) { list.innerHTML = '<li>Nenhum fator sentinela identificado.</li>'; } 
+            else { positiveAnswers.forEach(ans => { const li = document.createElement('li'); li.innerText = ans; list.appendChild(li); }); }
+
+            document.getElementById('btn-save').style.display = 'inline-block';
+            document.getElementById('btn-back-search').style.display = 'none';
+            document.getElementById('btn-new-patient').style.display = 'inline-block';
+        }
+
+        function saveToDatabase() {
+            const btn = document.getElementById('btn-save'); btn.innerText = "Salvando..."; btn.disabled = true;
+            const payload = {
+                especialidade: selectedSpecialty, idProtocolo: currentProtocolID, dataHora: currentTimeString,
+                profissionalNome: profData.nome, profissionalCRO: profData.cro, profissionalUBS: profData.ubs,
+                pacienteNome: patientData.nome, pacienteNasc: patientData.nasc, pacienteCPF: patientData.cpf,
+                pacienteEnd: patientData.end, pacienteTel: patientData.tel, pacienteACS: patientData.acs,
+                pacienteMotivo: patientData.motivo, escore: totalScore, risco: finalRiskLevel,
+                achados: positiveAnswers.length > 0 ? positiveAnswers.join(" | ") : "Nenhum"
+            };
+            fetch(GOOGLE_SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) })
+            .then(response => response.text())
+            .then(data => { btn.innerText = "✓ Salvo com sucesso"; btn.style.backgroundColor = "#10b981"; })
+            .catch(error => { alert("Erro ao salvar."); btn.innerText = "Tentar Salvar Novamente"; btn.disabled = false; });
+        }
+    </script>
+</body>
+</html>
