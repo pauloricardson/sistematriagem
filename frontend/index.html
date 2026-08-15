@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Triagem e Encaminhamento Odontológico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<!-- ================= TOPO (usuário logado) ================= -->
+<header id="topbar" class="topbar hidden">
+  <div class="topbar-inner">
+    <div class="brand"><span class="brand-icon">🦷</span> Sistema de Triagem</div>
+    <nav class="tabs" id="tabs-dentista" style="display:none;">
+      <a href="#dentista/nova" data-tab="nova">Nova Triagem</a>
+      <a href="#dentista/encaminhamentos" data-tab="encaminhamentos">Meus Encaminhamentos</a>
+    </nav>
+    <nav class="tabs" id="tabs-centro" style="display:none;">
+      <a href="#centro/encaminhamentos" data-tab="c-encaminhamentos">Encaminhamentos</a>
+      <a href="#centro/profissionais" data-tab="c-profissionais">Profissionais</a>
+    </nav>
+    <div class="user-box">
+      <span id="topbar-nome" class="user-nome"></span>
+      <span id="topbar-perfil" class="user-perfil"></span>
+      <button class="btn-sair" onclick="App.sair()">Sair</button>
+    </div>
+  </div>
+</header>
+
+<main class="app-wrapper">
+<div class="card">
+
+  <!-- ================= LOGIN ================= -->
+  <section id="view-login" class="view card-view hidden">
+    <div class="card-header"><div class="app-title">Acesso do Sistema</div></div>
+    <div class="card-body">
+      <h2 class="form-title">Entrar</h2>
+      <p class="form-desc">Acesso restrito a profissionais da saúde e ao Centro de Especialidades.</p>
+      <div class="input-group"><label>E-mail</label>
+        <input type="email" id="login-email" class="form-input" placeholder="seu@email.com" autocomplete="username"></div>
+      <div class="input-group"><label>Senha</label>
+        <input type="password" id="login-senha" class="form-input" placeholder="••••••••" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')App.entrar()"></div>
+      <button class="btn-main" id="btn-entrar" onclick="App.entrar()">Entrar</button>
+      <p id="login-erro" class="msg-erro hidden"></p>
+      <div class="links-area">
+        <a href="#primeiro-acesso">Primeiro acesso / Redefinir senha</a>
+        <a href="#paciente">Sou paciente — consultar meu processo</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PRIMEIRO ACESSO ================= -->
+  <section id="view-primeiro-acesso" class="view card-view hidden">
+    <div class="card-header"><div class="app-title">Definição de Senha</div></div>
+    <div class="card-body">
+      <h2 class="form-title">Primeiro acesso</h2>
+      <p class="form-desc">Informe o e-mail que o Centro de Especialidades cadastrou para você. Você receberá um link para definir sua senha.</p>
+      <div class="input-group"><label>E-mail cadastrado</label>
+        <input type="email" id="pa-email" class="form-input" placeholder="seu@email.com"></div>
+      <button class="btn-main" id="btn-pa" onclick="App.pedirLinkSenha()">Enviar link por e-mail</button>
+      <p id="pa-msg" class="msg-ok hidden"></p>
+      <p id="pa-erro" class="msg-erro hidden"></p>
+      <div class="links-area"><a href="#login">Voltar ao login</a></div>
+    </div>
+  </section>
+
+  <!-- ================= REDEFINIR SENHA (link do e-mail) ================= -->
+  <section id="view-redefinir" class="view card-view hidden">
+    <div class="card-header"><div class="app-title">Definição de Senha</div></div>
+    <div class="card-body">
+      <h2 class="form-title">Definir nova senha</h2>
+      <p class="form-desc">Escolha uma senha com no mínimo 8 caracteres.</p>
+      <div class="input-group"><label>Nova senha</label>
+        <input type="password" id="rs-senha" class="form-input" autocomplete="new-password"></div>
+      <div class="input-group"><label>Confirmar nova senha</label>
+        <input type="password" id="rs-senha2" class="form-input" autocomplete="new-password"
+               onkeydown="if(event.key==='Enter')App.definirSenha()"></div>
+      <button class="btn-main" id="btn-rs" onclick="App.definirSenha()">Salvar senha</button>
+      <p id="rs-msg" class="msg-ok hidden"></p>
+      <p id="rs-erro" class="msg-erro hidden"></p>
+      <div class="links-area"><a href="#login">Ir para o login</a></div>
+    </div>
+  </section>
+
+  <!-- ================= CONSULTA DO PACIENTE ================= -->
+  <section id="view-paciente" class="view card-view hidden">
+    <div class="card-header"><div class="app-title">Consulta do Paciente</div></div>
+    <div class="card-body">
+      <h2 class="form-title">Consultar meu processo</h2>
+      <p class="form-desc">Acompanhe o andamento do seu encaminhamento usando seu CPF e data de nascimento.</p>
+      <div class="form-grid">
+        <div class="input-group"><label>CPF *</label>
+          <input type="text" id="pac-cpf" class="form-input" placeholder="000.000.000-00"></div>
+        <div class="input-group"><label>Data de nascimento *</label>
+          <input type="date" id="pac-nasc" class="form-input"></div>
+      </div>
+      <button class="btn-main" id="btn-pac-consultar" onclick="App.consultarPaciente()">Consultar</button>
+      <p id="pac-erro" class="msg-erro hidden"></p>
+      <div id="pac-resultado" class="hidden"></div>
+      <div class="links-area"><a href="#login">Área dos profissionais</a></div>
+    </div>
+  </section>
+
+  <!-- ================= PAINEL DENTISTA ================= -->
+  <section id="view-dentista" class="view painel hidden"></section>
+
+  <!-- ================= PAINEL CENTRO ================= -->
+  <section id="view-centro" class="view painel hidden"></section>
+
+</div>
+</main>
+
+<footer class="rodape">Sistema de Triagem e Encaminhamento Odontológico — Centro de Especialidades</footer>
+
+<script src="./js/config.js"></script>
+<script src="./js/api.js"></script>
+<script src="./js/comum.js"></script>
+<script src="./js/dentista.js"></script>
+<script src="./js/centro.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>

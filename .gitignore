@@ -1,0 +1,10 @@
+# Segredos — NUNCA versionar
+backend/.env
+*.env
+
+# Dependências
+node_modules/
+
+# Diversos
+.DS_Store
+Thumbs.db
