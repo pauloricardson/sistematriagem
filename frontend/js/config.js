@@ -7,5 +7,5 @@
 //  - Teste local:        http://localhost:3000/api
 // ============================================================
 const CONFIG = {
-  API_URL: 'http://localhost:3000/api',
+  API_URL: 'https://sistematriagem-api.onrender.com/api',
 };
